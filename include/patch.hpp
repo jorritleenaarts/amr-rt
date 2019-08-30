@@ -1,7 +1,9 @@
 #ifndef PATCH_HPP
 #define PATCH_HPP
 
+#include <vector>
 #include "Arrays.hpp"
+
 
 namespace patch
 {
@@ -20,10 +22,9 @@ namespace patch
     // number of grid points per direction including boundaries
     int xrb, yrb;
 
+    int* dummy2;
     
-    //  int nx; 
-    //  int ny;
-    // int nb;
+    std::vector<int> dummy;
     mem::Array<int,2> density;
 
   private:

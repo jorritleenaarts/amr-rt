@@ -83,15 +83,18 @@ void iterate_fn(p4est_iter_volume_info_t* info, void* user_data)
    p->yrb = p->yr + 2 * ng;
 
    //std::cout << p->xrb << " " << p->yrb << std::endl;
-   p->density.resize(p->xrb, p->yrb);
+   //p->density.resize(-ng, p->xr + 1,-ng, p->yr + 1 );
+   //p->dummy.resize(p->xrb*p->yrb);
 
-   for (int j = 0; j < p->yr; ++j){
+   p->dummy2 = (int *) malloc(sizeof(int)*p->xrb*p->yrb);
+
+   
+     /*for (int j = 0; j < p->yr ; ++j){
       for (int i = 0; i < p->xr; ++i){
-	
-	//	p->density(j,i) =
-	//	std::cout << 10000 * (xmin + i) + (ymin + j) << std::endl;
+	p->density(j,i) =  10000 * (xmin + i) + (ymin + j);
      }
-   }
+     } */
+   // printf("%d  %08d \n",p->density(-1,-1), p->density(0,0));
  
   
 }
@@ -143,7 +146,7 @@ int main(int argc, char **argv)
   
   int x_ref_lvl = log2(context.nx_in_atmos / context.nx_per_patch);
   // for now a crappy implementation 
-  context.initial_refinement_level = 6; //x_ref_lvl; 
+  context.initial_refinement_level = 7; //x_ref_lvl; 
 
   /* 
    * create forest, put in extra  { ... } block to ensure destructor

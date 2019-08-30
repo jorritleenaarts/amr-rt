@@ -7,8 +7,7 @@
 #include <cmath>
 
 // p4est libraries
-#include "p4est.h"
-#include "p4est_iterate.h"
+
 
 // local includes
 #include "amr.hpp"
@@ -19,11 +18,14 @@
 // *********************************************************************
 
 int initial_refine_fn(p4est_t * p4est, p4est_topidx_t which_tree,
-	      p4est_quadrant_t * quadrant){
+	      p4est_quadrant_t * quadrant)
+{
 
   Context* context = static_cast<Context *>(p4est->user_pointer);
-  // cast int8_t as int so that cout knows to interpret it as an int and not a char.
-  std::cout << int(quadrant->level) << "/" << context->initial_refinement_level << std::endl;
+  // cast int8_t as int so that cout knows to interpret it as an
+  // int and not a char.
+  //std::cout << int(quadrant->level) << "/" << context->initial_refinement_level
+  //	    << std::endl;
 
   if (quadrant->level < context->initial_refinement_level) {
     return 1;
@@ -36,12 +38,11 @@ int initial_refine_fn(p4est_t * p4est, p4est_topidx_t which_tree,
 // *********************************************************************
 
 void initialize_quadrant(p4est_t * p4est, p4est_topidx_t which_tree,
-	      p4est_quadrant_t * quadrant){
+	      p4est_quadrant_t * quadrant)
+{
 
   Context* context = static_cast<Context *>(p4est->user_pointer);
   patch::Patch* lpatch = static_cast<patch::Patch *>(quadrant->p.user_data);
-
-
 
 }
 
@@ -50,23 +51,60 @@ void initialize_quadrant(p4est_t * p4est, p4est_topidx_t which_tree,
 void iterate_fn(p4est_iter_volume_info_t* info, void* user_data)
 {
 
-  p4est_quadrant_t   *q = info->quad;
-  p4est_topidx_t      which_tree = info->treeid;
+  p4est_quadrant_t* q = info->quad;
+  patch::Patch* p = static_cast<patch::Patch*>(q->p.user_data);
+  p4est_topidx_t which_tree = info->treeid;
+  Context* context = static_cast<Context *>(info->p4est->user_pointer);
+  
 
-  int* myid_ptr = (int *) user_data;
-  printf("myid = %d; tree = %d; level = %d \n",*myid_ptr, which_tree ,q->level);
+  //compute pixel coordinatse of lower left corner in input atmos
+  int xmin = (q->x * context->nx_in_atmos)/P4EST_ROOT_LEN;
+  int ymin = (q->y * context->ny_in_atmos)/P4EST_ROOT_LEN;
+
+  int xmax = xmin +
+    (P4EST_QUADRANT_LEN(q->level) * context->nx_in_atmos)/P4EST_ROOT_LEN - 1;
+   int ymax = ymin +
+    (P4EST_QUADRANT_LEN(q->level) * context->ny_in_atmos)/P4EST_ROOT_LEN - 1;
+
+   int ng = context->n_guard_zones;
+   
+   p->xs = xmin;
+   p->xe = xmax;
+   p->ys = ymin;
+   p->ye = ymax;
+   p->xr = xmax - xmin + 1;
+   p->yr = ymax - ymin + 1;
+   
+   p->xsb = xmin - ng;
+   p->xeb = xmax + ng;
+   p->ysb = ymin - ng;
+   p->yeb = ymax + ng;
+   p->xrb = p->xr + 2 * ng;
+   p->yrb = p->yr + 2 * ng;
+
+   //std::cout << p->xrb << " " << p->yrb << std::endl;
+   p->density.resize(p->xrb, p->yrb);
+
+   for (int j = 0; j < p->yr; ++j){
+      for (int i = 0; i < p->xr; ++i){
+	
+	//	p->density(j,i) =
+	//	std::cout << 10000 * (xmin + i) + (ymin + j) << std::endl;
+     }
+   }
+ 
   
 }
 
 // *********************************************************************
 
-int main(int argc, char **argv) 
+int main(int argc, char **argv)
 {
 
   // *********************************************************************
   // initialize MPI using the MPI manager sc which is needed for p4est
   // *********************************************************************
-
+  
   int mpiret = sc_MPI_Init (&argc, &argv);
   SC_CHECK_MPI (mpiret);
   sc_MPI_Comm mpicomm = sc_MPI_COMM_WORLD;
@@ -78,9 +116,8 @@ int main(int argc, char **argv)
    * static variable so subsequent global p4est log messages are only issued
    * from processor zero.  Here we turn off most of the logging; see sc.h. 
    */
-  sc_init (mpicomm, 1, 1, NULL, SC_LP_ESSENTIAL);
-  p4est_init(NULL, SC_LP_DEFAULT);
-
+  sc_init (mpicomm, 1, 1, nullptr, SC_LP_ESSENTIAL);
+  p4est_init(nullptr, SC_LP_DEFAULT);
 
   // *********************************************************************
   // read the input
@@ -96,17 +133,17 @@ int main(int argc, char **argv)
   Context context;
 
   // compute initial refinement
-  int nx;
-  int ny;
-  ftl::getKeyword(configuration, "[INPUT_ATMOS]", "nx", nx);
-  ftl::getKeyword(configuration, "[INPUT_ATMOS]", "ny", ny);
+  ftl::getKeyword(configuration, "[INPUT_ATMOS]", "nx", context.nx_in_atmos);
+  ftl::getKeyword(configuration, "[INPUT_ATMOS]", "ny", context.ny_in_atmos);
   
-  ftl::getKeyword(configuration, "[PATCH]", "nx_per_patch", context.nx_per_patch);
-  ftl::getKeyword(configuration, "[PATCH]", "ny_per_patch", context.ny_per_patch);
+  ftl::getKeyword(configuration, "[PATCH]", "nx_per_patch",
+		  context.nx_per_patch);
+  ftl::getKeyword(configuration, "[PATCH]", "ny_per_patch",
+		  context.ny_per_patch);
   
-  int x_ref_lvl = log2(nx / context.nx_per_patch);
-  std::cout <<nx << " " << context.nx_per_patch << " " << x_ref_lvl << std::endl;
-  context.initial_refinement_level = 1;// x_ref_lvl; // for now a crappy implementation 
+  int x_ref_lvl = log2(context.nx_in_atmos / context.nx_per_patch);
+  // for now a crappy implementation 
+  context.initial_refinement_level = 6; //x_ref_lvl; 
 
   /* 
    * create forest, put in extra  { ... } block to ensure destructor
@@ -119,25 +156,20 @@ int main(int argc, char **argv)
     
     // refine the initial forest
     int recursive = 1;
-    AMR.refineForest(recursive, initial_refine_fn, NULL);
+    AMR.refineForest(recursive, initial_refine_fn, nullptr);
+
+    /* 
+     * refine may lead to uneven number of leaves per MPI process,
+     * so redistribute
+     */
+    AMR.partitionForest(0, nullptr);
+
+    /* 
+     * iterate over all leaves and read initial atmosphere
+     */
+    AMR.iterateForest(nullptr, &myid, iterate_fn , nullptr, nullptr);
 
   }
-
-  /*
-  // refine lead to uneven number of leaves per MPI process, so redistribute
-  p4est_partition (forest, 0, NULL);
-
-  // iterate over all leaves
-  p4est_iterate(forest, NULL, &myid, iterate_fn , NULL, NULL);
-  
-  //  std::cout << "Hello World from rank " << myid << std::endl;
-
-  // Destroy the p4est and the connectivity structure. 
-  p4est_destroy (forest);
-  p4est_connectivity_destroy (connectivity);
-
-  */
-
 
   // *********************************************************************
   // finalize MPI

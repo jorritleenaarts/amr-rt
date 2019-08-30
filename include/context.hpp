@@ -12,6 +12,11 @@ public:
   int nx_per_patch;
   int ny_per_patch;
 
+  const int n_guard_zones = 1;
+
+  int_least64_t nx_in_atmos;
+  int_least64_t ny_in_atmos;
+
 };
 
 

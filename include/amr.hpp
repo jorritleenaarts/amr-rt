@@ -1,7 +1,8 @@
 #ifndef AMR_HPP
 #define AMR_HPP
 
-#include "p4est.h" 
+#include "p4est.h"
+#include "p4est_iterate.h"
 
 #include "ftools.hpp"
 #include "context.hpp"
@@ -35,7 +36,15 @@ namespace amr{
     ~Amr();
 
     void refineForest(int refine_recursive, p4est_refine_t refine_fn, p4est_init_t init_fn);
-  
+
+    void partitionForest(int allow_for_coarsening, p4est_weight_t weight_fn);
+
+    void iterateForest(p4est_ghost_t * ghost_layer,
+		       void *user_data,
+		       p4est_iter_volume_t iter_volume,
+		       p4est_iter_face_t iter_face,
+		       p4est_iter_corner_t iter_corner);
+
   };
 
 }

@@ -13,7 +13,7 @@ amr::Amr::Amr(sc_MPI_Comm mpicomm, ftl::section_t configuration,
   connectivity = p4est_connectivity_new_brick(n_trees_x, n_trees_y, periodic_x, periodic_y);
 
   // divide the forest over the mpi processes
-  forest = p4est_new(mpicomm, connectivity, user_data_size, NULL, &context );
+  forest = p4est_new(mpicomm, connectivity, user_data_size, nullptr, &context );
 
 }
 
@@ -35,5 +35,28 @@ void amr::Amr::refineForest(int refine_recursive,
   p4est_refine(forest, refine_recursive, refine_fn, init_fn);
 
 }
+
+// *********************************************************************
+
+void amr::Amr::partitionForest(int allow_for_coarsening,
+			       p4est_weight_t weight_fn){
+
+  p4est_partition (forest, allow_for_coarsening, weight_fn);
+  
+}
+  
+// *********************************************************************
+
+void amr::Amr::iterateForest(p4est_ghost_t * ghost_layer,
+		       void *user_data,
+		       p4est_iter_volume_t iter_volume,
+		       p4est_iter_face_t iter_face,
+			     p4est_iter_corner_t iter_corner){
+
+  p4est_iterate(forest, ghost_layer, user_data, iter_volume, iter_face,
+		iter_corner);
+
+  
+};
 
 // *********************************************************************

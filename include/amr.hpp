@@ -3,6 +3,7 @@
 
 #include "p4est.h"
 #include "p4est_iterate.h"
+#include "p4est_extended.h"
 
 #include "ftools.hpp"
 #include "context.hpp"
@@ -44,6 +45,17 @@ namespace amr{
 		       p4est_iter_volume_t iter_volume,
 		       p4est_iter_face_t iter_face,
 		       p4est_iter_corner_t iter_corner);
+
+    void refine(int refine_recursive, int maxlevel,
+		   p4est_refine_t refine_fn,
+		   p4est_init_t init_fn,
+		p4est_replace_t replace_fn);
+
+    void coarsen(int coarsen_recursive,
+		 int callback_orphans,
+		 p4est_coarsen_t coarsen_fn,
+		 p4est_init_t init_fn,
+		 p4est_replace_t replace_fn);
 
   };
 

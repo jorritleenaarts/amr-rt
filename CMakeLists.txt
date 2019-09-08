@@ -4,19 +4,24 @@ project(p4est-test)
 set(CMAKE_CXX_STANDARD 17)
 
 #p4est library
-SET(P4EST_DIR "/Users/jleen/code/p4est/src/")
+SET(P4EST_DIR "/Users/jleen/code/p4est/src")
 
 #SC library
-SET(SC_DIR "/Users/jleen/code/p4est/sc/src/")
+SET(SC_DIR "/Users/jleen/code/p4est/sc/src")
+
+SET(ANACONDA_DIR "/Users/jleen/anaconda")
+
+SET(HDF5_DIR "/Users/jleen/Downloads/hdf5-1.10.5/hdf5")
 
 SET(OPTIMIZATION_FLAGS "-O0 -g")
 
+
 # compiler flags and settings
-SET(CXX_COMPILE_FLAGS "${OPTIMIZATION_FLAGS} -std=c++${CMAKE_CXX_STANDARD} -I${P4EST_DIR} -I${SC_DIR}")
+SET(CXX_COMPILE_FLAGS "${OPTIMIZATION_FLAGS} -std=c++${CMAKE_CXX_STANDARD} -I${P4EST_DIR} -I${SC_DIR} -I${ANACONDA_DIR}/include -I${HDF5_DIR}/include")
 
-SET(C_COMPILE_FLAGS "${OPTIMIZATION_FLAGS} -I${P4EST_DIR} -I${SC_DIR} -I$(BZ_DIR)")
+SET(C_COMPILE_FLAGS "${OPTIMIZATION_FLAGS} -I${P4EST_DIR} -I${SC_DIR} -I$(BZ_DIR) -I${ANACONDA_DIR}/include")
 
-SET(LINK_FLAGS "${OPTIMIZATION_FLAGS}  -L${SC_DIR}/.libs -L${P4EST_DIR}/.libs -lsc -lp4est -std=c++${CMAKE_CXX_STANDARD} -lm")
+SET(LINK_FLAGS "-std=c++${CMAKE_CXX_STANDARD}  ${OPTIMIZATION_FLAGS} -L${SC_DIR}/.libs -L${P4EST_DIR}/.libs  -L${ANACONDA_DIR}/lib -L${HDF5_DIR}/lib -lsc -lp4est -lm -lhdf5_hl -lhdf5")
 
 SET(CMAKE_C_COMPILER /usr/local/bin/mpicc)
 SET(CMAKE_CXX_COMPILER /usr/local/bin/mpicxx)
@@ -30,6 +35,8 @@ include_directories(${PROJECT_BINARY_DIR}/include)
 file(GLOB INCLUDES "./include/*.hpp")
 
 file(GLOB SOURCES "./src/*.cpp")
+
+message(${LINK_FLAGS})
 
 add_executable(p4est-test.x ${SOURCES} ${INCLUDES})
 

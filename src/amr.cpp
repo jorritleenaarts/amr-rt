@@ -55,8 +55,29 @@ void amr::Amr::iterateForest(p4est_ghost_t * ghost_layer,
 
   p4est_iterate(forest, ghost_layer, user_data, iter_volume, iter_face,
 		iter_corner);
-
-  
 };
+
+// *********************************************************************
+
+void amr::Amr::refine(int refine_recursive, int maxlevel,
+		   p4est_refine_t refine_fn,
+		   p4est_init_t init_fn,
+		   p4est_replace_t replace_fn){
+
+  p4est_refine_ext(forest, refine_recursive, maxlevel, refine_fn,
+		   init_fn, replace_fn);
+};
+
+// *********************************************************************
+
+void amr::Amr::coarsen(int coarsen_recursive,
+		       int callback_orphans,
+		       p4est_coarsen_t coarsen_fn,
+		       p4est_init_t init_fn,
+		       p4est_replace_t replace_fn){
+  
+  p4est_coarsen_ext(forest, coarsen_recursive, callback_orphans,
+		    coarsen_fn, init_fn, replace_fn);
+   };
 
 // *********************************************************************

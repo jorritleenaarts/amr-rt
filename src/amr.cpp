@@ -21,18 +21,14 @@ amr::Amr::Amr(sc_MPI_Comm mpicomm, ftl::section_t configuration,
 
 amr::Amr::~Amr(){
 
-  // Destroy the p4est and the connectivity structure. 
+
+  // free all patches
+  p4est_iterate(forest, nullptr, nullptr, , nullptr,
+		nullptr);
+  
+  // Destroy the p4est and the connectivity structure.  
   p4est_destroy(forest);
   p4est_connectivity_destroy(connectivity);
-
-}
-
-// *********************************************************************
-
-void amr::Amr::refineForest(int refine_recursive, 
-		       p4est_refine_t refine_fn, p4est_init_t init_fn){
-
-  p4est_refine(forest, refine_recursive, refine_fn, init_fn);
 
 }
 
@@ -59,7 +55,7 @@ void amr::Amr::iterateForest(p4est_ghost_t * ghost_layer,
 
 // *********************************************************************
 
-void amr::Amr::refine(int refine_recursive, int maxlevel,
+void amr::Amr::refineForest(int refine_recursive, int maxlevel,
 		   p4est_refine_t refine_fn,
 		   p4est_init_t init_fn,
 		   p4est_replace_t replace_fn){
@@ -70,7 +66,7 @@ void amr::Amr::refine(int refine_recursive, int maxlevel,
 
 // *********************************************************************
 
-void amr::Amr::coarsen(int coarsen_recursive,
+void amr::Amr::coarsenForest(int coarsen_recursive,
 		       int callback_orphans,
 		       p4est_coarsen_t coarsen_fn,
 		       p4est_init_t init_fn,

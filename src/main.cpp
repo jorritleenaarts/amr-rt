@@ -19,116 +19,43 @@
 #include "hdf.hpp"
 #include "math.hpp"
 
-// *********************************************************************
-
-int initial_refine_fn(p4est_t * p4est, p4est_topidx_t which_tree,
-	      p4est_quadrant_t * quadrant)
-{
-
-  Context* context = static_cast<Context *>(p4est->user_pointer);
- 
-  if (quadrant->level < context->initial_refinement_level) {
-    return 1;
-  } else {
-    return 0;
-  }
-
-}
 
 // *********************************************************************
 
-int density_refine_condition(p4est_t * p4est, p4est_topidx_t which_tree,
-	      p4est_quadrant_t * quadrant)
-{
+void allocate_patch(p4est_quadrant_t* q){
 
-  Context* context = static_cast<Context *>(p4est->user_pointer);
-  patch::Patch* p = static_cast<patch::Patch*>(quadrant->p.user_data);
-
-  const float density_gradient_threshold = 0.2;
-
-
-  mem::Array<float,3> grad = math::grid_gradient(p->density);
-  std::cout << "refine = 1" << std::endl;
-   return 1;
-   
-  // compute gradient of density
- 
-  mem::Array<float,2> absgrad = math::abs_array(grad);
-
- 
-  
-  for (int j = p->ys; j < p->ye; ++j ){
-    for (int i = p->xs; i < p->xe; ++i ){
-      if (absgrad(j,i) /= p->density(j,i) > density_gradient_threshold){
-	std::cout << "refine = 1" << std::endl;
-	return 1;
-      }
-    }
-  }
-  std::cout << "refine = 0" << std::endl;
-  return 0;
-
-}
-
-// *********************************************************************
-
-void refine_patch_function(p4est_t * p4est,
-			    p4est_topidx_t which_tree,
-			    int num_outgoing,
-			    p4est_quadrant_t * outgoing[],
-			    int num_incoming,
-			    p4est_quadrant_t * incoming[]){
-
-			   }
-
-// *********************************************************************
-
-void nullify_user_data_ptr(p4est_t* p4est, p4est_topidx_t which_tree,
-	      p4est_quadrant_t* quadrant)
-// callback function following p4est_init_t prototype
-{
-  // CHRASHES WHEN RUNNING WITH MORE THAN ONE MPI PROCESS
-  // quadrant->p.user_data = nullptr;
-}
-
-// *********************************************************************
-
-void allocate_new_patches(p4est_iter_volume_info_t* info, void* user_data)
-  // callback function following p4est_iter_volume_t prototype
-{
-
-  p4est_quadrant_t* q = info->quad;
-  p4est_topidx_t which_tree = info->treeid;
-
-  
   if (q->p.user_data != nullptr){
-    printf("q->p.user_data not null at tree %i with refinement level %i\n",
-	   info->treeid, q->level);
-    printf("This might be a memory leak, or the leaves are not properly initialized.\n");
-    //  abort();
+    printf("q->p.user_data not null, stopping.\n");
+    abort();
   }
-  
-  
+
   // allocate patch and copy into user data pointer.
-  std::cout << "making new patch on" << std::endl;
   patch::Patch*  p = new patch::Patch();
   q->p.user_data = p;
-   
+ 
 }
 
 // *********************************************************************
 
-void initialize_new_patches(p4est_iter_volume_info_t* info, void* user_data)
-  // callback function following p4est_iter_volume_t prototype
-{
+void deallocate_patch(p4est_quadrant_t* q){
 
-  p4est_quadrant_t* q = info->quad;
-  p4est_topidx_t which_tree = info->treeid;
-  Context* context = static_cast<Context *>(info->p4est->user_pointer);
+  if (q->p.user_data == nullptr){
+    printf("q->p.user_data null, stopping.\n");
+    abort();
+  }
+
+  patch::Patch* p=static_cast<patch::Patch*>(q->p.user_data);
+  delete p;
+  q->p.user_data = nullptr;
+}
+
+// *********************************************************************
+
+void initialize_patch(p4est_quadrant_t* q, Context* context){
+
   patch::Patch* p = static_cast<patch::Patch*>(q->p.user_data);
 
-  
-  //compute pixel coordinates of lower left corner in input atmos
+   //compute pixel coordinates of lower left corner in input atmos
   int xmin = (q->x * context->nx_in_atmos) / P4EST_ROOT_LEN;
   int ymin = (q->y * context->ny_in_atmos) / P4EST_ROOT_LEN;
 
@@ -154,7 +81,137 @@ void initialize_new_patches(p4est_iter_volume_info_t* info, void* user_data)
    p->yrb = p->yr + 2 * ng;
 
    p->density.resize(-ng,p->xr,-ng,p->yr);
-   std::cout << "here: " <<  p->density.size() << std::endl;   
+   p->density = 0.0;
+   //printf(" %i %i %i %i %i %i\n", p->xs, p->xe, p->xr, p->ys, p->ye, p->yr);
+   
+}
+
+// *********************************************************************
+
+int initial_refine_fn(p4est_t * p4est, p4est_topidx_t which_tree,
+	      p4est_quadrant_t * quadrant)
+{
+    return 1;
+}
+
+// *********************************************************************
+
+int density_refine_condition(p4est_t * p4est, p4est_topidx_t which_tree,
+	      p4est_quadrant_t * quadrant)
+{
+
+  Context* context = static_cast<Context*>(p4est->user_pointer);
+  patch::Patch* p = static_cast<patch::Patch*>(quadrant->p.user_data);
+
+  const float density_gradient_threshold = 0.2;
+
+  ///  std::cout << "fff " << p << " " << quadrant->p.user_data << std::endl;
+
+  mem::Array<float,3> grad  = math::grid_gradient(p->density);
+
+  float g0 = 0.0;
+  float g1 = 0.0;
+  for (int j = 0; j < p->yr; ++j ){
+    for (int i = 0; i < p->xr; ++i ){
+      g0 =  fabs(grad(j,i,0) /p->density(j,i));
+      g1 =  fabs(grad(j,i,1) / p->density(j,i));
+          if ( g0 >= density_gradient_threshold ||
+	       
+	       g1 >= density_gradient_threshold ){
+	    /*
+		printf("%i %i % (%e %e) (%e %e) %e\n",i,j,
+	      grad(j,i,0), grad(j,i,1), g0,g1, p->density(j,i));
+	    */
+	return 1;
+      }
+    }
+  }
+  return 0;
+
+}
+
+// *********************************************************************
+
+void refine_patch_function(p4est_t * p4est,
+			    p4est_topidx_t which_tree,
+			    int num_outgoing,
+			    p4est_quadrant_t * outgoing[],
+			    int num_incoming,
+			    p4est_quadrant_t * incoming[]){
+
+  Context* context = static_cast<Context*>(p4est->user_pointer);
+
+  // coarse user data
+  patch::Patch* oldp = static_cast<patch::Patch*>(outgoing[0]->p.user_data);
+  
+  //allocate and initialize child patches
+  assert(P4EST_CHILDREN == num_incoming);
+  patch::Patch* newp;
+  for (int i = 0; i < P4EST_CHILDREN; i++) {
+    allocate_patch(incoming[i]);
+    initialize_patch(incoming[i], context);
+    newp = static_cast<patch::Patch*>(incoming[i]->p.user_data);
+    newp->inject_and_interpolate_from_coarse(oldp);
+    
+    
+    /* 
+       printf("\ndensity\n");
+    for (int j = 0; j < 6; ++j){
+      printf("\n");
+      for (int i = 0; i < 6; ++i){
+	printf("%e ",newp->density(j,i));
+      }
+    }
+    printf("\n");
+    */
+    
+  }
+
+ 
+
+  // deallocate old patch
+  deallocate_patch(outgoing[0]);
+
+}
+
+
+// *********************************************************************
+
+void nullify_user_data_ptr(p4est_t* p4est, p4est_topidx_t which_tree,
+	      p4est_quadrant_t* quadrant)
+{
+  quadrant->p.user_data = nullptr;
+  //  std::cout << "999 " << quadrant->p.user_data << std::endl;
+}
+
+
+
+// *********************************************************************
+
+void allocate_new_patches(p4est_iter_volume_info_t* info, void* user_data)
+  // callback function following p4est_iter_volume_t prototype
+{
+
+  p4est_quadrant_t* q = info->quad;
+  //  std::cout << "aaa" << q->p.user_data << std::endl;
+  allocate_patch(q);
+  //std::cout << "bbb " << q->p.user_data << std::endl;
+    
+   
+}
+
+// *********************************************************************
+
+void initialize_new_patches(p4est_iter_volume_info_t* info, void* user_data)
+  // callback function following p4est_iter_volume_t prototype
+{
+
+  p4est_quadrant_t* q = info->quad;
+  Context* context = static_cast<Context *>(info->p4est->user_pointer);
+  patch::Patch* p = static_cast<patch::Patch*>(q->p.user_data);
+
+  initialize_patch(q, context);
+ 
 }
 
 // *********************************************************************
@@ -179,8 +236,7 @@ void read_atmos(p4est_iter_volume_info_t* info, void* user_data)
       p->density(j, i) = tmp2d(j, i);
     }
    }
-  //printf("density(0,0)=%e\n",p->density(0,0));
-  
+  //   std::cout << "ddd " << p << " " << q->p.user_data << std::endl;
 }
 
 // *********************************************************************
@@ -260,7 +316,7 @@ int main(int argc, char **argv)
   // compute initial refinement
   // for now a crappy implementation 
   int x_ref_lvl = log2(context.nx_in_atmos / context.nx_per_patch);
-  context.initial_refinement_level = 1; // x_ref_lvl; 
+  context.initial_refinement_level = x_ref_lvl; 
 
   /* 
    * create forest, put in extra  { ... } block to ensure destructor
@@ -268,7 +324,7 @@ int main(int argc, char **argv)
    */
   {
 
-    amr::Amr AMR(mpicomm, configuration, sizeof(patch::Patch), context);
+    amr::Amr AMR(mpicomm, configuration,0 , context);
 
     // initialize hdf
     hdf::init();
@@ -277,10 +333,11 @@ int main(int argc, char **argv)
     // refine the initial forest
     //
     int recursive = 1;
-    AMR.refineForest(recursive,
-    		     initial_refine_fn,
-		     nullify_user_data_ptr);
 
+     AMR.refineForest(recursive,context.initial_refinement_level,
+	       initial_refine_fn,
+	       nullify_user_data_ptr,
+	       nullptr);
     /* 
      * refine may lead to uneven number of leaves per MPI process,
      * so redistribute
@@ -290,8 +347,8 @@ int main(int argc, char **argv)
     /* 
      * iterate over all leaves and read initial atmosphere
      */
-    AMR.iterateForest(nullptr, &myid, allocate_new_patches, nullptr, nullptr);
-    AMR.iterateForest(nullptr, &myid, initialize_new_patches, nullptr, nullptr);
+    AMR.iterateForest(nullptr, nullptr, allocate_new_patches, nullptr, nullptr);
+    AMR.iterateForest(nullptr, nullptr, initialize_new_patches, nullptr, nullptr);
     
     std::string atmosfile;
     ftl::getKeyword(configuration, "[INPUT_ATMOS]", "f", atmosfile);
@@ -304,16 +361,16 @@ int main(int argc, char **argv)
 
     /* adapt */
     recursive = 1;
-    int allowed_level = context.initial_refinement_level + 2;
-    //    AMR.refine(recursive, allowed_level, density_refine_condition,
-    //	       nullptr, refine_patch_function);
-    AMR.refine(recursive, allowed_level, density_refine_condition,
-	       nullptr, nullptr);
+    int allowed_level = context.initial_refinement_level+2;
+    AMR.refineForest(recursive, allowed_level,
+	       density_refine_condition,
+	       nullify_user_data_ptr,
+	       refine_patch_function);
 
     
     /*
     recursive = 1
-    AMR::coarsen(recursive, callbackorphans,
+    AMR::coarsenForest(recursive, callbackorphans,
       step3_coarsen_err_estimate, NULL,
       step3_replace_quads);
 	p4est_balance_ext (p4est, P4EST_CONNECT_FACE, NULL,

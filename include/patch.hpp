@@ -13,6 +13,10 @@ namespace patch
   
   public:
 
+    /* 
+       the following integers hold information of where the patch is
+       located in he initial atmosphere
+     */
     // start and end indices of the internal zones
     int xs=-1, xe, ys=-1, ye;
     // number of grid points per direction in the internal domain
@@ -21,7 +25,14 @@ namespace patch
     int xsb, xeb, ysb, yeb;
     // number of grid points per direction including boundaries
     int xrb, yrb;
+
+    int xsize, ysize;
+    
+    // contains the atmosphere data, array offset in each dimension is
+    // -nb and the number of elements in that direction is xrb
     mem::Array<float,2> density;
+
+    void inject_and_interpolate_from_coarse(Patch* oldp);
 
   private:
 

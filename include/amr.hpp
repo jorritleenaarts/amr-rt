@@ -36,8 +36,6 @@ namespace amr{
 
     ~Amr();
 
-    void refineForest(int refine_recursive, p4est_refine_t refine_fn, p4est_init_t init_fn);
-
     void partitionForest(int allow_for_coarsening, p4est_weight_t weight_fn);
 
     void iterateForest(p4est_ghost_t * ghost_layer,
@@ -46,12 +44,12 @@ namespace amr{
 		       p4est_iter_face_t iter_face,
 		       p4est_iter_corner_t iter_corner);
 
-    void refine(int refine_recursive, int maxlevel,
+    void refineForest(int refine_recursive, int maxlevel,
 		   p4est_refine_t refine_fn,
 		   p4est_init_t init_fn,
 		p4est_replace_t replace_fn);
 
-    void coarsen(int coarsen_recursive,
+    void coarsenForest(int coarsen_recursive,
 		 int callback_orphans,
 		 p4est_coarsen_t coarsen_fn,
 		 p4est_init_t init_fn,

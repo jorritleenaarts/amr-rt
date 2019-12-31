@@ -1,0 +1,5 @@
+need p4est and its sub-library sc installed.
+
+They are a bit tricky because it'll test for mpicxx eventhough this is not necessary. This test will fail unless you configure with
+
+./configure CXX=mpicxx CC=mpicc --enable-mpi LAPACK_LIBS=/usr/lib/Liblapack.so.3 

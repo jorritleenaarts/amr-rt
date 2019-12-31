@@ -465,26 +465,25 @@ int main(int argc, char **argv)
     } 
 
     /*coarsen*/
- 
     recursive = 0;
     for (int i = 0; i < 3; ++i){
       forest.coarsen(recursive, density_coarsen_condition, 
 		     coarsen_patch_function);
       forest.balance(P4EST_CONNECT_FACE, replace_patch);
     } 
-    
-    //    forest.partition();
 
     forest.writeVTKFile();  
-
-    forest.iterateVolume(amr::deallocate_patches);
         
     /* create the ghost quadrants */
   
     //  p4est_ghost_t* ghost = p4est_ghost_new(p4est, P4EST_CONNECT_FULL);
-    
-  }
 
+    /*
+      note that the following bracket calls the destructor on the forest
+      object and deallocates all patches
+    */
+  }
+  
   // finalize hdf
   hdf::finalize();
   

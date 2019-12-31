@@ -21,8 +21,6 @@ void amr::allocate_patch(p4est_quadrant_t* q){
 
 void amr::deallocate_patch(p4est_quadrant_t* q){
 
-  //std::cout << q->x << " " << q->y << " "  << q->p.user_data << std::endl;
-
   if (q->p.user_data == nullptr){
     printf("q->p.user_data == null, stopping.\n");
     abort();
@@ -74,6 +72,9 @@ amr::Forest::Forest(sc_MPI_Comm mpicomm, ftl::section_t configuration,
   // divide the forest over the mpi processes
   forest = p4est_new(mpicomm, connectivity, user_data_size, 
 		     nullify_user_data, &context );
+
+  // initialize ghost layer
+  ghost = nullptr;
 
 }
 
@@ -156,6 +157,32 @@ void amr::Forest::balance(p4est_connect_type_t btype,
 void amr::Forest::writeVTKFile(){
 
   p4est_vtk_write_file (forest, NULL, P4EST_STRING "_step1");
+}
+
+// *********************************************************************
+
+void amr::Forest::create_ghost_layer(p4est_connect_type_t btype){
+
+  if (ghost != nullptr) {
+    printf("ghost not null, stopping.\n");
+    abort();
+  }
+
+  ghost = p4est_ghost_new(forest, btype);
+  
+}
+
+// *********************************************************************
+
+void amr::Forest::destroy_ghost_layer(){
+
+  if (ghost == nullptr) {
+    printf("ghost == null, stopping.\n");
+    abort();
+  }
+
+  p4est_ghost_destroy(ghost);
+  
 }
 
 // *********************************************************************

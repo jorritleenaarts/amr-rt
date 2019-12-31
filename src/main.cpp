@@ -442,10 +442,12 @@ int main(int argc, char **argv)
      * allocate a patch at each leaf, and allocate space for user data
      * in each patch
      */
+  
     forest.iterateVolume(amr::allocate_patches);
     forest.iterateVolume(initialize_new_patches);
     
     // read atmosphere
+    /*
     std::string atmosfile;
     ftl::getKeyword(configuration, "[INPUT_ATMOS]", "f", atmosfile);
     hdf::Hdf f;
@@ -453,8 +455,13 @@ int main(int argc, char **argv)
     forest.iterateVolume(read_atmos, nullptr, &f);
     f.close();
     forest.iterateVolume(fill_boundaries);
+    */
+
+    
 
     /* refine */
+
+    /*
     recursive = 0;
     int allowed_level = context.initial_refinement_level + 2;
     for (int i = 0; i < 2; ++i){
@@ -463,8 +470,11 @@ int main(int argc, char **argv)
 		    refine_patch_function);
       forest.balance(P4EST_CONNECT_FACE, replace_patch);
     } 
+    */
 
     /*coarsen*/
+
+    /*
     recursive = 0;
     for (int i = 0; i < 3; ++i){
       forest.coarsen(recursive, density_coarsen_condition, 
@@ -472,11 +482,11 @@ int main(int argc, char **argv)
       forest.balance(P4EST_CONNECT_FACE, replace_patch);
     } 
 
-    forest.writeVTKFile();  
+    forest.writeVTKFile(); 
+    */ 
         
     /* create the ghost quadrants */
-  
-    //  p4est_ghost_t* ghost = p4est_ghost_new(p4est, P4EST_CONNECT_FULL);
+    forest.create_ghost_layer(P4EST_CONNECT_FULL);
 
     /*
       note that the following bracket calls the destructor on the forest

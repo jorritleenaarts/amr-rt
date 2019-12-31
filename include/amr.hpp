@@ -72,6 +72,7 @@ namespace amr{
     // the p4est objects
     p4est_connectivity_t* connectivity;
     p4est_t* forest;
+    p4est_ghost_t* ghost;
 
   public:
 
@@ -105,6 +106,10 @@ namespace amr{
 		 p4est_replace_t replace_fn);
 
     void writeVTKFile();
+
+    void create_ghost_layer(p4est_connect_type_t btype);
+
+    void destroy_ghost_layer();
 
   };
 

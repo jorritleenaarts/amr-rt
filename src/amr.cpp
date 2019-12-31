@@ -21,6 +21,8 @@ void amr::allocate_patch(p4est_quadrant_t* q){
 
 void amr::deallocate_patch(p4est_quadrant_t* q){
 
+  //std::cout << q->x << " " << q->y << " "  << q->p.user_data << std::endl;
+
   if (q->p.user_data == nullptr){
     printf("q->p.user_data == null, stopping.\n");
     abort();

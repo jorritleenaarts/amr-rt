@@ -69,7 +69,7 @@ namespace amr{
     int n_trees_x = 1; //number of trees in x
     int n_trees_y = 1; // number of trees in y
 
-    // the p4est objects that
+    // the p4est objects
     p4est_connectivity_t* connectivity;
     p4est_t* forest;
 

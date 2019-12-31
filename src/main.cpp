@@ -5,7 +5,6 @@
 #include <cstdio>
 #include <typeinfo>
 #include <cmath>
-
 #include <cassert>
 
 // p4est libraries
@@ -374,7 +373,7 @@ void face_iteration_test(p4est_iter_face_info_t * info, void *user_data){
     side[1] = p4est_iter_fside_array_index_int(sides, 1);
   }
 
-  /*
+  
   for (int i=0; i < sides->elem_count; ++i){
     printf("%i %i %i \n",
 	   side[i]->face,
@@ -382,7 +381,7 @@ void face_iteration_test(p4est_iter_face_info_t * info, void *user_data){
 	   side[i]->is.full.is_ghost);
   }
   printf("\n");
-  */
+  
     
 }
 
@@ -455,7 +454,6 @@ int main(int argc, char **argv)
     f.close();
     forest.iterateVolume(fill_boundaries);
 
-
     /* refine */
     recursive = 0;
     int allowed_level = context.initial_refinement_level + 2;
@@ -464,22 +462,26 @@ int main(int argc, char **argv)
 		    density_refine_condition,
 		    refine_patch_function);
       forest.balance(P4EST_CONNECT_FACE, replace_patch);
-    }
-    
-    
-    //coarsen
+    } 
+
+    /*coarsen*/
+ 
     recursive = 0;
     for (int i = 0; i < 3; ++i){
       forest.coarsen(recursive, density_coarsen_condition, 
 		     coarsen_patch_function);
       forest.balance(P4EST_CONNECT_FACE, replace_patch);
-    }
-
+    } 
+    
+    //    forest.partition();
 
     forest.writeVTKFile();  
 
+    forest.iterateVolume(amr::deallocate_patches);
+        
     /* create the ghost quadrants */
-    //    p4est_ghost_t* ghost = p4est_ghost_new(p4est, P4EST_CONNECT_FULL);
+  
+    //  p4est_ghost_t* ghost = p4est_ghost_new(p4est, P4EST_CONNECT_FULL);
     
   }
 
